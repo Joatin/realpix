@@ -1,2 +1,3 @@
-# healpix-rs
-A HEALPix implementation in rust
+# REALPix
+
+A HEALPix implementation in pure rust.
