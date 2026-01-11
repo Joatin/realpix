@@ -1,5 +1,5 @@
 use crate::numbering_scheme::NumberingScheme;
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 /// A generic structure representing a pixel with an associated numbering scheme.
 ///

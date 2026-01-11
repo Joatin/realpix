@@ -8,11 +8,11 @@ impl NumberingScheme for Nested {
         let z = theta.cos();
         let za = z.abs();
         let nside = face_resolution as f64;
-        let phi = phi.rem_euclid(std::f64::consts::TAU);
+        let phi = phi.rem_euclid(core::f64::consts::TAU);
 
         let (face, ix, iy) = if za <= 2.0 / 3.0 {
             // Equatorial region: 4 faces
-            let tt = phi / (std::f64::consts::PI / 2.0); // [0,4)
+            let tt = phi / (core::f64::consts::PI / 2.0); // [0,4)
             let face = 4 + tt.floor() as u32;
             let f = tt - tt.floor();
 
@@ -28,7 +28,7 @@ impl NumberingScheme for Nested {
         } else {
             // Polar caps: 0-3 = north, 8-11 = south
             let tmp = nside * (3.0 * (1.0 - za)).sqrt();
-            let f = (phi / (std::f64::consts::PI / 2.0)).fract();
+            let f = (phi / (core::f64::consts::PI / 2.0)).fract();
             let ix = (f * tmp).floor().max(0.0).min(nside - 1.0) as u32;
             let iy = (tmp - ix as f64 - 1.0).floor().max(0.0).min(nside - 1.0) as u32;
 
@@ -70,22 +70,22 @@ impl NumberingScheme for Nested {
         let (z, phi) = if face < 4 {
             // North polar cap
             let z = 1.0 - (x + y).powi(2) / 3.0;
-            let phi = (std::f64::consts::PI / 2.0) * (x - y) / (x + y);
+            let phi = (core::f64::consts::PI / 2.0) * (x - y) / (x + y);
             (z, phi)
         } else if face < 8 {
             // Equatorial region
             let z = (2.0 / 3.0) * (2.0 - (x + y));
-            let phi = (std::f64::consts::PI / 2.0) * (x - y)
-                + (face as f64 - 4.0) * (std::f64::consts::PI / 2.0);
+            let phi = (core::f64::consts::PI / 2.0) * (x - y)
+                + (face as f64 - 4.0) * (core::f64::consts::PI / 2.0);
             (z, phi)
         } else {
             // South polar cap
             let z = -1.0 + (x + y).powi(2) / 3.0;
-            let phi = (std::f64::consts::PI / 2.0) * (x - y) / (x + y);
+            let phi = (core::f64::consts::PI / 2.0) * (x - y) / (x + y);
             (z, phi)
         };
 
-        Ok((z.acos(), phi.rem_euclid(std::f64::consts::TAU)))
+        Ok((z.acos(), phi.rem_euclid(core::f64::consts::TAU)))
     }
 }
 

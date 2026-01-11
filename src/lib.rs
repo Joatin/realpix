@@ -1,3 +1,10 @@
+#![no_std]
+
+#[cfg(feature = "std")]
+extern crate std;
+#[cfg(feature = "std")]
+extern crate std as core;
+
 mod const_healpix;
 mod dynamic_healpix;
 mod error;

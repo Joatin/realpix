@@ -7,4 +7,8 @@ keywords = ["HEALPix"]
 license = "Apache-2.0 OR MIT"
 
 [dependencies]
-thiserror = "2"
+thiserror = { version = "2", default-features = false }
+
+[features]
+default = ["std"]
+std = ["thiserror/std"]
