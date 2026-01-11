@@ -1,6 +1,7 @@
 use crate::numbering_scheme::NumberingScheme;
 use crate::pixel::Pixel;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Nested;
 
 impl NumberingScheme for Nested {
@@ -100,7 +101,7 @@ fn deinterleave(v: u32) -> (u32, u32) {
 }
 
 #[inline]
-fn spread_bits(mut x: u32) -> u64 {
+fn spread_bits(x: u32) -> u64 {
     let mut r = 0u64;
     for i in 0..16 {
         r |= ((x as u64 >> i) & 1) << (2 * i);
@@ -109,10 +110,110 @@ fn spread_bits(mut x: u32) -> u64 {
 }
 
 #[inline]
-fn compact_bits(mut x: u32) -> u32 {
+fn compact_bits(x: u32) -> u32 {
     let mut r = 0u32;
     for i in 0..16 {
         r |= ((x >> (2 * i)) & 1) << i;
     }
     r
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::f64::consts::{PI, TAU};
+
+    type N = Nested;
+
+    #[test]
+    fn pixel_count_is_correct() {
+        let nside = 32;
+        let total = 12 * nside * nside;
+
+        let max_pixel = Pixel::<N>::from_u64(total as u64 - 1).as_u64();
+
+        assert_eq!(max_pixel, total as u64 - 1);
+    }
+
+    #[test]
+    fn angle_to_pixel_is_in_range() {
+        let nside = 64;
+        let total = (12 * nside * nside) as u64;
+
+        for i in 0..1000 {
+            let theta = PI * (i as f64 / 1000.0);
+            let phi = TAU * ((i * 37) as f64 / 1000.0);
+
+            let pix = Nested::angle_to_pixel::<N>(nside, theta, phi).as_u64();
+            assert!(pix < total, "pixel out of range: {}", pix);
+        }
+    }
+
+    #[test]
+    fn poles_map_to_polar_faces() {
+        let nside = 32;
+
+        let pix_north = Nested::angle_to_pixel::<N>(nside, 0.0, 0.0).as_u64();
+        let face_north = pix_north / (nside * nside) as u64;
+
+        assert!(face_north < 4, "north pole not in north cap");
+
+        let pix_south = Nested::angle_to_pixel::<N>(nside, PI, 0.0).as_u64();
+        let face_south = pix_south / (nside * nside) as u64;
+
+        assert!(face_south >= 8, "south pole not in south cap");
+    }
+
+    #[test]
+    fn equator_maps_to_equatorial_faces() {
+        let nside = 32;
+
+        for i in 0..4 {
+            let phi = (i as f64 + 0.5) * (PI / 2.0);
+            let pix = Nested::angle_to_pixel::<N>(nside, PI / 2.0, phi).as_u64();
+            let face = pix / (nside * nside) as u64;
+
+            assert!(
+                (4..8).contains(&face),
+                "equator pixel in wrong face: {}",
+                face
+            );
+        }
+    }
+
+    #[test]
+    fn phi_wraparound_consistency() {
+        let nside = 64;
+        let theta = PI / 3.0;
+
+        let pix1 = Nested::angle_to_pixel::<N>(nside, theta, 0.01).as_u64();
+        let pix2 = Nested::angle_to_pixel::<N>(nside, theta, TAU + 0.01).as_u64();
+
+        assert_eq!(pix1, pix2);
+    }
+
+    #[test]
+    fn locality_small_perturbation() {
+        let nside = 128;
+
+        let theta = 0.6 * PI;
+        let phi = 1.0;
+
+        let pix1 = Nested::angle_to_pixel::<N>(nside, theta, phi).as_u64();
+        let pix2 = Nested::angle_to_pixel::<N>(nside, theta + 1e-5, phi + 1e-5).as_u64();
+
+        assert!(
+            (pix1 as i64 - pix2 as i64).abs() < 20,
+            "nested locality violated"
+        );
+    }
+
+    #[test]
+    fn invalid_pixel_is_rejected() {
+        let nside = 16;
+        let total = (12 * nside * nside) as u64;
+
+        let bad_pixel = Pixel::<N>::from_u64(total);
+        assert!(Nested::pixel_to_angle::<N>(nside, bad_pixel).is_err());
+    }
 }

@@ -26,4 +26,21 @@ pub trait Healpix {
     fn pixel_to_angle<N: NumberingScheme>(&self, pixel: Pixel<N>) -> crate::Result<(f64, f64)> {
         N::pixel_to_angle(self.face_resolution(), pixel)
     }
+
+    fn iter_pixels<N: NumberingScheme>(&self) -> impl Iterator<Item = Pixel<N>> + '_ {
+        (0..self.total_pixels()).map(|index| Pixel::from_u64(index as u64))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{ConstHealpix, Healpix, Nested};
+
+    const HEALPIX: ConstHealpix<32> = ConstHealpix::new();
+
+    #[test]
+    fn iter_pixels_should_iterate_over_all_pixels() {
+        let count = HEALPIX.iter_pixels::<Nested>().count();
+        assert_eq!(count, HEALPIX.total_pixels() as usize);
+    }
 }

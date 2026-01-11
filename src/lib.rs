@@ -9,6 +9,7 @@ mod const_healpix;
 mod dynamic_healpix;
 mod error;
 mod healpix;
+mod hpd;
 mod nested;
 mod numbering_scheme;
 mod pixel;

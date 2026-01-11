@@ -20,6 +20,7 @@ use core::marker::PhantomData;
 /// # Notes
 /// This struct does not contain runtime information associated with the numbering scheme,
 /// as its purpose is to leverage the type system to enforce correctness.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Pixel<N: NumberingScheme>(u64, PhantomData<N>);
 
 impl<N: NumberingScheme> Pixel<N> {
