@@ -31,16 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: rustup update stable && rustup default stable
-      - name: cargo login
-        run: |-
-          echo "${{ secrets.CRATES_IO_API_TOKEN }}" | cargo login
-      - name: "cargo release publish"
-        run: |-
-          cargo release \
-            publish \
-            --workspace \
-            --all-features \
-            --allow-branch HEAD \
-            --no-confirm \
-            --no-verify \
-            --execute
+      - name: Login
+        run: echo "${{ secrets.CRATES_IO_API_TOKEN }}" | cargo login
+      - name: Publish
+        run: cargo publish
