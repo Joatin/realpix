@@ -1,5 +1,6 @@
 use crate::numbering_scheme::NumberingScheme;
 use crate::pixel::Pixel;
+use latlong::{Declination, Float, RaDec, RightAscension};
 
 /// A trait that defines the basic operations for a HEALPix (Hierarchical Equal Area isoLatitude Pixelization)
 /// grid structure. It provides methods for determining resolution, pixel counts, and coordinate transformations
@@ -25,6 +26,29 @@ pub trait Healpix {
     /// Converts pixel indices to angular coordinates based on the HEALPix grid numbering scheme.
     fn pixel_to_angle<N: NumberingScheme>(&self, pixel: Pixel<N>) -> crate::Result<(f64, f64)> {
         N::pixel_to_angle(self.face_resolution(), pixel)
+    }
+
+    fn ra_dec_to_pixel<N: NumberingScheme, T: Float>(&self, ra_dec: RaDec<T>) -> Pixel<N> {
+        let theta = core::f64::consts::FRAC_PI_2 - ra_dec.dec.radians().to_f64();
+        let phi = ra_dec
+            .ra
+            .radians()
+            .to_f64()
+            .rem_euclid(core::f64::consts::TAU);
+        N::angle_to_pixel(self.face_resolution(), theta, phi)
+    }
+
+    fn pixel_to_ra_dec<N: NumberingScheme, T: Float>(
+        &self,
+        pixel: Pixel<N>,
+    ) -> crate::Result<RaDec<T>> {
+        let (theta, phi) = N::pixel_to_angle(self.face_resolution(), pixel)?;
+        let dec = core::f64::consts::FRAC_PI_2 - theta;
+        let ra = phi.rem_euclid(core::f64::consts::TAU);
+        Ok(RaDec {
+            ra: RightAscension::from_radians(T::from(ra)),
+            dec: Declination::from_radians(T::from(dec)),
+        })
     }
 
     fn iter_pixels<N: NumberingScheme>(&self) -> impl Iterator<Item = Pixel<N>> + '_ {
