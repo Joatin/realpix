@@ -1,6 +1,6 @@
 [package]
 name = "realpix"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2024"
 description = "A HEALPix implementation in pure rust"
 keywords = ["HEALPix"]
@@ -8,7 +8,7 @@ license = "Apache-2.0 OR MIT"
 
 [dependencies]
 thiserror = { version = "2", default-features = false }
-latlong = { version = "0.1" }
+latlong = { version = "0.1.3" }
 
 [features]
 default = ["std"]

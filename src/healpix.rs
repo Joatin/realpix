@@ -1,6 +1,7 @@
+use crate::gnomonic_project::gnomonic_project;
 use crate::numbering_scheme::NumberingScheme;
 use crate::pixel::Pixel;
-use latlong::{Declination, Float, RaDec, RightAscension};
+use latlong::{Declination, Float, RaDec, RightAscension, TangentPosition};
 
 /// A trait that defines the basic operations for a HEALPix (Hierarchical Equal Area isoLatitude Pixelization)
 /// grid structure. It provides methods for determining resolution, pixel counts, and coordinate transformations
@@ -28,7 +29,7 @@ pub trait Healpix {
         N::pixel_to_angle(self.face_resolution(), pixel)
     }
 
-    fn ra_dec_to_pixel<N: NumberingScheme, T: Float>(&self, ra_dec: RaDec<T>) -> Pixel<N> {
+    fn ra_dec_to_pixel<N: NumberingScheme, T: Float>(&self, ra_dec: &RaDec<T>) -> Pixel<N> {
         let theta = core::f64::consts::FRAC_PI_2 - ra_dec.dec.radians().to_f64();
         let phi = ra_dec
             .ra
@@ -53,6 +54,20 @@ pub trait Healpix {
 
     fn iter_pixels<N: NumberingScheme>(&self) -> impl Iterator<Item = Pixel<N>> + '_ {
         (0..self.total_pixels()).map(|index| Pixel::from_u64(index as u64))
+    }
+
+    fn project_ra_dec<N: NumberingScheme, T: Float>(
+        &self,
+        pixel: Pixel<N>,
+        ra_dec: &RaDec<T>,
+    ) -> Option<TangentPosition<T>> {
+        let pixel_2 = self.ra_dec_to_pixel::<N, T>(ra_dec);
+        if pixel != pixel_2 {
+            None
+        } else {
+            let center_ra_dec = self.pixel_to_ra_dec::<N, T>(pixel).unwrap();
+            gnomonic_project::<T>(center_ra_dec, ra_dec)
+        }
     }
 }
 

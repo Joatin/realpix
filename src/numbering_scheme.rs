@@ -10,7 +10,7 @@ use crate::pixel::Pixel;
 ///
 /// The trait is generic over the implementing type `N`, which should also implement
 /// the `NumberingScheme` trait.
-pub trait NumberingScheme {
+pub trait NumberingScheme: PartialEq {
     fn angle_to_pixel<N: NumberingScheme>(pixels_per_face: u32, theta: f64, phi: f64) -> Pixel<N>;
     fn pixel_to_angle<N: NumberingScheme>(
         pixels_per_face: u32,

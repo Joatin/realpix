@@ -4,9 +4,9 @@ version = 4
 
 [[package]]
 name = "latlong"
-version = "0.1.0"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f83c2c43b67ec90d55b09378b19c0c59f57762f26590fa0c0827681a51de0653"
+checksum = "50e502121d3487d227e2883ada20b43a25e17e54b107349622307e48c4cd2f64"
 dependencies = [
  "serde",
 ]
@@ -31,7 +31,7 @@ dependencies = [
 
 [[package]]
 name = "realpix"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "latlong",
  "thiserror",
