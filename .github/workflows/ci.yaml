@@ -22,3 +22,36 @@ jobs:
       - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
       - run: cargo build --verbose
       - run: cargo test --verbose
+      # The exhaustive round-trip and equal-area tests are only affordable optimised.
+      - run: cargo test --release --verbose
+      - run: cargo test --all-features --verbose
+
+  features:
+    name: Feature combinations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable && rustup default stable
+      - run: cargo build --no-default-features --features libm
+      - run: cargo build --no-default-features --features libm,alloc
+      - run: cargo build --no-default-features --features latlong
+      - run: cargo test --no-default-features --features libm,alloc
+
+  no_std:
+    name: no_std target
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable && rustup default stable
+      - run: rustup target add thumbv7em-none-eabihf
+      - run: cargo build --no-default-features --features libm --target thumbv7em-none-eabihf
+
+  lint:
+    name: Lints and docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable && rustup default stable && rustup component add clippy rustfmt
+      - run: cargo fmt --check
+      - run: cargo clippy --all-features --all-targets -- -D warnings
+      - run: cargo doc --all-features --no-deps

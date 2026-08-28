@@ -1,15 +1,34 @@
 [package]
 name = "realpix"
-version = "0.1.3"
+version = "0.2.0"
 edition = "2024"
 description = "A HEALPix implementation in pure rust"
 keywords = ["HEALPix"]
 license = "Apache-2.0 OR MIT"
+repository = "https://github.com/Joatin/realpix"
+categories = ["science", "algorithms", "no-std"]
+exclude = ["tools/", "tests/", ".github/", ".idea/", ".DS_Store", ".pre-commit-config.yaml"]
 
 [dependencies]
-thiserror = { version = "2", default-features = false }
-latlong = { version = "0.1.3" }
+latlong = { version = "0.1.3", optional = true }
+libm = { version = "0.2", optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }
+proptest = "1"
+rand = { version = "0.8", features = ["small_rng"] }
 
 [features]
 default = ["std"]
-std = ["thiserror/std"]
+std = ["alloc"]
+alloc = []
+libm = ["dep:libm"]
+# `latlong` itself depends on `std`.
+latlong = ["dep:latlong", "std"]
+
+[[bench]]
+name = "healpix"
+harness = false
+
+[package.metadata.docs.rs]
+all-features = true
