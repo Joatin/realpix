@@ -1,6 +1,6 @@
 //! Verifies the geometric bound the cone search relies on.
 //!
-//! `nested::MAX_CENTER_TO_VERTEX[d]` must be an upper bound on the distance from any
+//! `realpix::max_center_to_vertex(d)` must be an upper bound on the distance from any
 //! cell's centre to any point on that cell's boundary. Under-estimating it would make the
 //! cone search silently drop cells, so this is checked exhaustively where that is
 //! affordable and by sampling everywhere else.
@@ -25,7 +25,7 @@ fn max_center_to_vertex(layer: &nested::Layer, cell: u64) -> f64 {
 fn center_to_vertex_bound_holds_exhaustively() {
     for depth in 0..=EXHAUSTIVE_DEPTH {
         let layer = nested::get(depth);
-        let bound = nested::MAX_CENTER_TO_VERTEX[depth as usize];
+        let bound = realpix::max_center_to_vertex(depth);
         let mut worst = 0.0f64;
         for cell in layer.iter() {
             worst = worst.max(max_center_to_vertex(&layer, cell));
@@ -47,7 +47,7 @@ fn center_to_vertex_bound_holds_at_every_depth() {
     let mut rng = Rng::new(0x5EED);
     for depth in (EXHAUSTIVE_DEPTH + 1)..=MAX_DEPTH {
         let layer = nested::get(depth);
-        let bound = nested::MAX_CENTER_TO_VERTEX[depth as usize];
+        let bound = realpix::max_center_to_vertex(depth);
         let mut worst = 0.0f64;
         for _ in 0..20_000 {
             worst = worst.max(max_center_to_vertex(
@@ -73,7 +73,7 @@ fn cell_boundary_never_leaves_the_bound() {
     // farther from the centre than the corners are.
     for depth in 0..=4 {
         let layer = nested::get(depth);
-        let bound = nested::MAX_CENTER_TO_VERTEX[depth as usize];
+        let bound = realpix::max_center_to_vertex(depth);
         for cell in layer.iter() {
             let c = layer.center_vec(cell);
             let vertices = layer.vertices(cell);

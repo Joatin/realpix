@@ -12,9 +12,9 @@
 use super::Layer;
 use crate::Vec3;
 use crate::base::Base;
+use crate::geometry::TABLE as MAX_CENTER_TO_VERTEX;
 use crate::math::{PI, TAU, acos, cos, dot, fmodulo, safe_atan2, sqrt};
 use crate::merge::Merger;
-use crate::nested::MAX_CENTER_TO_VERTEX;
 use core::ops::Range;
 
 /// The geometry of one iso-latitude ring, `jr` counted from the north pole and 1-based.

@@ -162,6 +162,11 @@ the descent visits the boundary of the disc at every level on the way down.
 So: **pick the scheme your catalogue is already sorted in.** Neither search is the
 compromise; they cover the same disc about equally well.
 
+Both prune with the same geometric bound, `max_center_to_vertex(depth)` — the radius of the
+smallest disc centred on a cell that still contains the whole cell. It is public, because
+it is also what you need to widen a margin by so a search cannot miss a source lying
+anywhere in a cell it touches.
+
 ---
 
 ## Hashing in bulk

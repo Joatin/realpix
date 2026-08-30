@@ -240,7 +240,7 @@ fn neighbours_are_adjacent_on_the_sphere() {
     let mut rng = Rng::new(11);
     for depth in [1, 4, 8, 12] {
         let layer = nested::get(depth);
-        let bound = 2.5 * nested::MAX_CENTER_TO_VERTEX[depth as usize];
+        let bound = 2.5 * realpix::max_center_to_vertex(depth);
         for _ in 0..2000 {
             let cell = rng.next_u64() % layer.n_hash();
             let c = layer.center_vec(cell);

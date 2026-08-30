@@ -92,6 +92,10 @@ Other changes:
 - Vector entry points throughout (`hash_vec`, `center_vec`), and `lonlat_to_vec`,
   `vec_to_lonlat`, `angular_distance`.
 - Checked, non-panicking variants: `checked_get`, `checked_hash`, `checked_center`.
+- `max_center_to_vertex(depth)` — the radius of the smallest disc centred on a cell that
+  contains the whole cell, which is what a search margin has to allow for. This is the
+  bound both cone searches prune with, exposed as a function rather than as the lookup
+  table behind it, so the table stays an implementation detail.
 
 ### Removed
 

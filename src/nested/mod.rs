@@ -7,8 +7,6 @@
 
 mod cone;
 
-pub use cone::MAX_CENTER_TO_VERTEX;
-
 use crate::base::Base;
 use crate::depth::check_depth;
 use crate::error::{Error, Result};

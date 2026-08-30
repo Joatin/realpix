@@ -61,6 +61,7 @@ pub mod moc;
 mod base;
 mod depth;
 mod error;
+mod geometry;
 mod math;
 mod merge;
 mod proj;
@@ -73,6 +74,7 @@ pub mod radec;
 
 pub use self::depth::{MAX_DEPTH, depth_from_nside, n_hash, nside};
 pub use self::error::{Error, Result};
+pub use self::geometry::max_center_to_vertex;
 pub use self::tangent::{angular_distance, gnomonic_project, lonlat_to_vec, vec_to_lonlat};
 pub use self::uniq::{from_uniq, to_uniq};
 pub use self::xyf::Direction;

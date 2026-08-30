@@ -1,5 +1,6 @@
 //! Measures the largest centre-to-boundary angular distance over a whole layer.
-//! Used to derive `nested::MAX_CENTER_TO_VERTEX`; not part of the public API.
+//! Measures the table behind `realpix::max_center_to_vertex`. The table itself is an
+//! implementation detail; the accessor is the public contract.
 use realpix::nested;
 
 fn ang(a: [f64; 3], b: [f64; 3]) -> f64 {

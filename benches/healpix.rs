@@ -51,6 +51,11 @@ fn depth_helpers(c: &mut Criterion) {
     g.bench_function("depth::depth_from_nside", |b| {
         b.iter(|| black_box(realpix::depth_from_nside(black_box(4096))))
     });
+    // A range check and a table load; the interest is that it stays that cheap, since both
+    // cone searches call it per query.
+    g.bench_function("geometry::max_center_to_vertex", |b| {
+        b.iter(|| black_box(realpix::max_center_to_vertex(black_box(D))))
+    });
     g.finish();
 }
 

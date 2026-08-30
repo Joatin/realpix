@@ -168,8 +168,8 @@ fn the_ring_surrounds_the_cell_without_overlapping_it() {
                     "ring cell {edge} is inside the cell"
                 );
                 // Just outside means within the cell's own reach plus one small cell.
-                let reach = nested::MAX_CENTER_TO_VERTEX[depth as usize]
-                    + 2.0 * nested::MAX_CENTER_TO_VERTEX[(depth + 3) as usize];
+                let reach = realpix::max_center_to_vertex(depth)
+                    + 2.0 * realpix::max_center_to_vertex(depth + 3);
                 let d = ang_dist(nested::get(depth + 3).center_vec(edge), center);
                 assert!(d <= reach, "ring cell {edge} is {d} away, beyond {reach}");
             }

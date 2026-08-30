@@ -10,6 +10,7 @@ use super::Layer;
 use crate::Vec3;
 use crate::base::Base;
 use crate::depth::MAX_DEPTH;
+use crate::geometry::{N_DEPTHS, TABLE as MAX_CENTER_TO_VERTEX};
 use crate::math::{PI, cos, dot};
 use crate::merge::Merger;
 use core::ops::Range;
@@ -42,40 +43,6 @@ fn refine_levels(radius: f64, rho: f64) -> u8 {
         // The boundary band is already a thin shell around a large result.
         0
     }
-}
-
-const N_DEPTHS: usize = MAX_DEPTH as usize + 1;
-
-/// Upper bound, in radians, on the angular distance from a cell centre to any point on
-/// that cell's boundary, indexed by depth.
-///
-/// Entries up to depth 9 are the exhaustively measured maxima over every cell of the
-/// layer, plus 1%; deeper entries use the limit of `nside * max`, which the measured
-/// values approach from below (`1.0690`), rounded up to `1.08`. `tests/geometry.rs`
-/// re-derives and checks the whole table.
-///
-/// The bound is only ever used conservatively: over-estimating it can make a cone search
-/// return extra cells, never miss one.
-pub const MAX_CENTER_TO_VERTEX: [f64; N_DEPTHS] = center_to_vertex_table();
-
-const fn center_to_vertex_table() -> [f64; N_DEPTHS] {
-    let mut t = [0.0f64; N_DEPTHS];
-    t[0] = 0.849_479_357_273_609_8;
-    t[1] = 0.486_275_076_190_827_7;
-    t[2] = 0.256_876_738_598_488_5;
-    t[3] = 0.131_729_689_889_850_1;
-    t[4] = 0.066_674_909_046_839_1;
-    t[5] = 0.033_538_733_479_886_7;
-    t[6] = 0.016_819_555_463_525_1;
-    t[7] = 0.008_422_310_052_121_9;
-    t[8] = 0.004_214_286_344_673_0;
-    t[9] = 0.002_107_925_787_852_9;
-    let mut d = 10;
-    while d < N_DEPTHS {
-        t[d] = 1.08 / ((1u64 << d) as f64);
-        d += 1;
-    }
-    t
 }
 
 /// Everything the descent needs, built once per query.
