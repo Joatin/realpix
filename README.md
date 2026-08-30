@@ -337,8 +337,8 @@ itself:
   suite at every depth.
 
 Every public function carries a runnable example, so the documentation is executed by the
-test suite rather than merely written: `cargo test --all-features` runs 97 doctests
-alongside the rest.
+test suite rather than merely written — `cargo test --all-features` runs every one of them
+alongside the rest, and a claim in a doc comment cannot quietly stop being true.
 
 Every public function is also benchmarked, under an id of the form `module::function`:
 
