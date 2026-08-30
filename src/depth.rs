@@ -12,6 +12,11 @@ pub const MAX_DEPTH: u8 = 29;
 ///
 /// # Panics
 /// Panics if `depth > `[`MAX_DEPTH`].
+///
+/// ```
+/// assert_eq!(realpix::nside(0), 1);
+/// assert_eq!(realpix::nside(10), 1024);
+/// ```
 #[inline(always)]
 pub const fn nside(depth: u8) -> u32 {
     assert!(depth <= MAX_DEPTH, "depth must be <= MAX_DEPTH");
@@ -22,6 +27,11 @@ pub const fn nside(depth: u8) -> u32 {
 ///
 /// # Panics
 /// Panics if `depth > `[`MAX_DEPTH`].
+///
+/// ```
+/// assert_eq!(realpix::n_hash(0), 12);
+/// assert_eq!(realpix::n_hash(10), 12 * 1024 * 1024);
+/// ```
 #[inline(always)]
 pub const fn n_hash(depth: u8) -> u64 {
     assert!(depth <= MAX_DEPTH, "depth must be <= MAX_DEPTH");
@@ -30,8 +40,16 @@ pub const fn n_hash(depth: u8) -> u64 {
 
 /// The depth matching `nside`, i.e. `log2(nside)`.
 ///
+/// The inverse of [`nside`], for callers holding an `nside` from a FITS header or another
+/// HEALPix library.
+///
 /// # Errors
 /// Returns [`Error::InvalidNside`] if `nside` is not a power of two in `1..=2^29`.
+///
+/// ```
+/// assert_eq!(realpix::depth_from_nside(1024), Ok(10));
+/// assert!(realpix::depth_from_nside(1000).is_err());
+/// ```
 #[inline]
 pub const fn depth_from_nside(nside: u32) -> Result<u8> {
     if nside == 0 || !nside.is_power_of_two() || nside > (1u32 << MAX_DEPTH) {

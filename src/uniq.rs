@@ -10,6 +10,13 @@ use crate::depth::MAX_DEPTH;
 ///
 /// # Panics
 /// Panics if `depth > `[`MAX_DEPTH`] or `cell` is out of range for `depth`.
+///
+/// ```
+/// // Cell 3 of the base layer, and the same cell one depth down.
+/// assert_eq!(realpix::to_uniq(0, 3), 7);
+/// assert_eq!(realpix::to_uniq(1, 12), 28);
+/// assert_eq!(realpix::from_uniq(realpix::to_uniq(1, 12)), (1, 12));
+/// ```
 #[inline]
 pub const fn to_uniq(depth: u8, cell: u64) -> u64 {
     assert!(depth <= MAX_DEPTH, "depth must be <= MAX_DEPTH");
@@ -25,6 +32,11 @@ pub const fn to_uniq(depth: u8, cell: u64) -> u64 {
 /// # Panics
 /// Panics if `uniq` is smaller than 4 (the smallest valid NUNIQ value) or encodes a depth
 /// beyond [`MAX_DEPTH`].
+///
+/// ```
+/// assert_eq!(realpix::from_uniq(4), (0, 0));
+/// assert_eq!(realpix::from_uniq(16), (1, 0));
+/// ```
 #[inline]
 pub const fn from_uniq(uniq: u64) -> (u8, u64) {
     assert!(uniq >= 4, "not a valid uniq value");

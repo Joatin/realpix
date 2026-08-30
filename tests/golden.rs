@@ -202,3 +202,34 @@ fn cone_coverage_contains_reference_disc() {
         );
     }
 }
+
+/// The RING search must contain the same reference disc, translated across the schemes.
+#[test]
+fn ring_cone_coverage_contains_reference_disc() {
+    let csv = Csv::load("query_disc.csv");
+    for row in &csv.rows {
+        let depth = u8_at(row, 0);
+        let (lon, lat, radius) = (f64_at(row, 1), f64_at(row, 2), f64_at(row, 3));
+        let expected: Vec<u64> = row[4]
+            .split_whitespace()
+            .map(|s| s.parse().unwrap())
+            .collect();
+
+        let nest = nested::get(depth);
+        let layer = realpix::ring::get(depth);
+        let got = layer.cone_coverage_cells(lonlat_to_vec(lon, lat), radius);
+        for cell in &expected {
+            let as_ring = nest.to_ring(*cell);
+            assert!(
+                got.binary_search(&as_ring).is_ok(),
+                "ring cone at depth {depth}, ({lon}, {lat}) r={radius} is missing cell {cell} (RING {as_ring})"
+            );
+        }
+        assert!(
+            got.len() <= 8 * expected.len().max(4),
+            "ring cone at depth {depth} returned {} cells for an exact {} — too loose",
+            got.len(),
+            expected.len()
+        );
+    }
+}

@@ -44,6 +44,10 @@ mod imp {
         x.asin()
     }
     #[inline(always)]
+    pub(crate) fn acos(x: f64) -> f64 {
+        x.acos()
+    }
+    #[inline(always)]
     pub(crate) fn atan2(y: f64, x: f64) -> f64 {
         y.atan2(x)
     }
@@ -79,6 +83,10 @@ mod imp {
     #[inline(always)]
     pub(crate) fn asin(x: f64) -> f64 {
         libm::asin(x)
+    }
+    #[inline(always)]
+    pub(crate) fn acos(x: f64) -> f64 {
+        libm::acos(x)
     }
     #[inline(always)]
     pub(crate) fn atan2(y: f64, x: f64) -> f64 {

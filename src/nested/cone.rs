@@ -11,6 +11,7 @@ use crate::Vec3;
 use crate::base::Base;
 use crate::depth::MAX_DEPTH;
 use crate::math::{PI, cos, dot};
+use crate::merge::Merger;
 use core::ops::Range;
 
 /// How many levels below the requested depth the boundary test may be refined.
@@ -77,47 +78,14 @@ const fn center_to_vertex_table() -> [f64; N_DEPTHS] {
     t
 }
 
-/// Merges the ranges emitted by the descent before handing them to the caller.
-///
-/// The descent visits cells in increasing index order, so a new range is always either
-/// contiguous with (or contained in) the pending one, or entirely beyond it.
-struct Merger<F: FnMut(Range<u64>)> {
-    pending: Option<Range<u64>>,
-    sink: F,
-}
-
-impl<F: FnMut(Range<u64>)> Merger<F> {
-    #[inline]
-    fn push(&mut self, range: Range<u64>) {
-        if let Some(pending) = self.pending.as_mut()
-            && range.start <= pending.end
-        {
-            pending.end = pending.end.max(range.end);
-            return;
-        }
-        if let Some(previous) = self.pending.replace(range) {
-            (self.sink)(previous);
-        }
-    }
-
-    #[inline]
-    fn flush(mut self) {
-        if let Some(pending) = self.pending.take() {
-            (self.sink)(pending);
-        }
-    }
-}
-
 /// Everything the descent needs, built once per query.
 struct Cone {
-    center: Vec3,
-    /// `sin(lat)` of the cone axis.
+    /// `sin(lat)` of the cone axis, i.e. `cos` of its colatitude.
     center_z: f64,
-    /// `radius + rho[k]`, as a bound on `|z_cell - z_axis|`. Since
-    /// `|sin a - sin b| <= |a - b| <= angular distance`, a cell whose centre differs from
-    /// the axis by more than this in `z` cannot touch the cone — and that test costs no
-    /// trigonometry at all, so it runs first.
-    max_dz: [f64; N_DEPTHS],
+    /// `sin` of the cone axis's colatitude.
+    center_sth: f64,
+    /// Longitude of the cone axis, in radians.
+    center_phi: f64,
     /// `cos(radius + rho[k])`: a cell at depth `k` whose centre has a smaller dot product
     /// than this cannot touch the cone.
     cos_outer: [f64; N_DEPTHS],
@@ -131,17 +99,28 @@ struct Cone {
 
 impl Cone {
     /// The dot product of a cell centre with the cone axis, or `None` when the cell was
-    /// rejected by the cheap latitude test.
+    /// rejected on latitude alone.
+    ///
+    /// Working from the cell's own `(z, phi)` rather than building its unit vector saves
+    /// the `sin` half of a `sin_cos`, since
+    /// `dot = z*z0 + sin(theta)*sin(theta0)*cos(phi - phi0)`. It also puts a free and
+    /// exact latitude test in the way: `cos(phi - phi0)` is at most 1, so the first term
+    /// plus the whole second term is the largest the dot product could reach at *any*
+    /// longitude — and that bound is `cos(theta - theta0)`. A cell failing it is outside
+    /// the cone's latitude band altogether and never pays for the `cos`.
     #[inline]
     fn cell_dot(&self, depth: u8, cell: u64) -> Option<f64> {
         let base = &self.bases[depth as usize];
         let xyf = base.nested2xyf(cell);
         let (x, y) = (xyf.x as f64 + 0.5, xyf.y as f64 + 0.5);
-        let z = base.xyf2z(xyf.face, x, y);
-        if (z - self.center_z).abs() > self.max_dz[depth as usize] {
+        let loc = base.xyf2loc(xyf.face, x, y);
+
+        let across = loc.z * self.center_z;
+        let along = loc.sth * self.center_sth;
+        if across + along < self.cos_outer[depth as usize] {
             return None;
         }
-        Some(dot(&base.xyf2loc(xyf.face, x, y).to_vec(), &self.center))
+        Some(across + along * cos(loc.phi - self.center_phi))
     }
 
     /// Whether any part of `cell` might touch the cone, refined `REFINE` levels down.
@@ -207,12 +186,14 @@ impl Layer {
     /// assert!(cells > 0);
     /// ```
     pub fn cone_coverage<F: FnMut(Range<u64>)>(&self, center: Vec3, radius: f64, sink: F) {
-        let mut merger = Merger {
-            pending: None,
-            sink,
-        };
+        let mut merger = Merger::new(sink);
 
-        if !radius.is_finite() || radius < 0.0 || !center.iter().all(|c| c.is_finite()) {
+        // The axis must be normalisable. A zero vector has finite components but no
+        // direction, and normalising it would put a NaN into every comparison below —
+        // where NaN answers "no" to both the reject and the accept test, so nothing would
+        // prune and the descent would walk the entire layer.
+        let len2 = dot(&center, &center);
+        if !radius.is_finite() || radius < 0.0 || !len2.is_finite() || len2 <= 0.0 {
             merger.flush();
             return;
         }
@@ -222,11 +203,12 @@ impl Layer {
             return;
         }
 
-        let norm = 1.0 / crate::math::sqrt(dot(&center, &center));
+        let norm = 1.0 / crate::math::sqrt(len2);
+        let center_z = (center[2] * norm).clamp(-1.0, 1.0);
         let mut cone = Cone {
-            center: [center[0] * norm, center[1] * norm, center[2] * norm],
-            center_z: center[2] * norm,
-            max_dz: [2.0; N_DEPTHS],
+            center_z,
+            center_sth: crate::math::sqrt((1.0 - center_z) * (1.0 + center_z)),
+            center_phi: crate::math::safe_atan2(center[1], center[0]),
             cos_outer: [-2.0; N_DEPTHS],
             cos_inner: [2.0; N_DEPTHS],
             bases: [Base::new(0); N_DEPTHS],
@@ -247,7 +229,6 @@ impl Layer {
             if radius > rho {
                 cone.cos_inner[k] = cos(radius - rho);
             }
-            cone.max_dz[k] = radius + rho;
         }
 
         for base_cell in 0..12u64 {
@@ -257,6 +238,13 @@ impl Layer {
     }
 
     /// [`cone_coverage`](Self::cone_coverage) taking the cone centre as `(lon, lat)` in radians.
+    ///
+    /// ```
+    /// let layer = realpix::nested::get(6);
+    /// let mut from_lonlat = Vec::new();
+    /// layer.cone_coverage_lonlat(1.0, 0.5, 0.05, |r| from_lonlat.push(r));
+    /// assert_eq!(from_lonlat, layer.cone_coverage_ranges(realpix::lonlat_to_vec(1.0, 0.5), 0.05));
+    /// ```
     pub fn cone_coverage_lonlat<F: FnMut(Range<u64>)>(
         &self,
         lon: f64,
@@ -268,6 +256,13 @@ impl Layer {
     }
 
     /// [`cone_coverage`](Self::cone_coverage), collected into a `Vec`.
+    ///
+    /// ```
+    /// let layer = realpix::nested::get(6);
+    /// let ranges = layer.cone_coverage_ranges(realpix::lonlat_to_vec(1.0, 0.5), 0.05);
+    /// // Sorted, disjoint and non-adjacent.
+    /// assert!(ranges.windows(2).all(|w| w[0].end < w[1].start));
+    /// ```
     #[cfg(feature = "alloc")]
     pub fn cone_coverage_ranges(&self, center: Vec3, radius: f64) -> alloc::vec::Vec<Range<u64>> {
         let mut out = alloc::vec::Vec::new();
@@ -276,6 +271,18 @@ impl Layer {
     }
 
     /// Every cell covered by [`cone_coverage`](Self::cone_coverage), in index order.
+    ///
+    /// Sorted, so it can be binary-searched. Prefer
+    /// [`cone_coverage_ranges`](Self::cone_coverage_ranges) for a large disc, where the
+    /// ranges are far more compact than the cells they expand to.
+    ///
+    /// ```
+    /// let layer = realpix::nested::get(6);
+    /// let center = realpix::lonlat_to_vec(1.0, 0.5);
+    /// let cells = layer.cone_coverage_cells(center, 0.05);
+    /// // The cone's own cell is always covered.
+    /// assert!(cells.binary_search(&layer.hash_vec(center)).is_ok());
+    /// ```
     #[cfg(feature = "alloc")]
     pub fn cone_coverage_cells(&self, center: Vec3, radius: f64) -> alloc::vec::Vec<u64> {
         let mut out = alloc::vec::Vec::new();

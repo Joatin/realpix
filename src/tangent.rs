@@ -60,6 +60,16 @@ pub fn angular_distance(a: Vec3, b: Vec3) -> f64 {
 }
 
 /// Converts `(lon, lat)` in radians to a unit vector.
+///
+/// The inverse of [`vec_to_lonlat`].
+///
+/// ```
+/// let v = realpix::lonlat_to_vec(0.0, 0.0);
+/// assert!((v[0] - 1.0).abs() < 1e-15);
+/// // The north pole.
+/// let p = realpix::lonlat_to_vec(1.234, std::f64::consts::FRAC_PI_2);
+/// assert!((p[2] - 1.0).abs() < 1e-15);
+/// ```
 #[inline]
 pub fn lonlat_to_vec(lon: f64, lat: f64) -> Vec3 {
     let (sin_lon, cos_lon) = sin_cos(lon);
@@ -68,6 +78,15 @@ pub fn lonlat_to_vec(lon: f64, lat: f64) -> Vec3 {
 }
 
 /// Converts a unit vector to `(lon, lat)` in radians, with `lon` in `[0, 2π)`.
+///
+/// The inverse of [`lonlat_to_vec`]. Longitude is wrapped into `[0, 2π)`, so a direction
+/// just west of the seam comes back near `2π` rather than as a negative angle.
+///
+/// ```
+/// let (lon, lat) = realpix::vec_to_lonlat([0.0, -1.0, 0.0]);
+/// assert!((lon - 1.5 * std::f64::consts::PI).abs() < 1e-15);
+/// assert!(lat.abs() < 1e-15);
+/// ```
 #[inline]
 pub fn vec_to_lonlat(v: Vec3) -> (f64, f64) {
     let lon = crate::math::fmodulo(crate::math::safe_atan2(v[1], v[0]), crate::math::TAU);

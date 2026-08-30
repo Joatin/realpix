@@ -12,6 +12,13 @@
 //! * [`ring`] — iso-latitude numbering, ordered by ring from the north pole. Used by
 //!   spherical-harmonic transforms.
 //!
+//! Both schemes offer the same entry points, including a cone search; they differ only in
+//! how cells are numbered, and therefore in how compact the result of a cone search is.
+//!
+//! An arbitrary region of sky — the union of the fields solved so far, the sky a survey
+//! reached — is a [`moc::Moc`]: a set of cells drawn from any mix of depths, with exact
+//! union, intersection and difference over it. Requires the `alloc` feature.
+//!
 //! # Conventions
 //!
 //! * Angles are **radians**. Positions are given as `(lon, lat)` with `lon` in `[0, 2π)`
@@ -48,10 +55,14 @@ extern crate std;
 pub mod nested;
 pub mod ring;
 
+#[cfg(feature = "alloc")]
+pub mod moc;
+
 mod base;
 mod depth;
 mod error;
 mod math;
+mod merge;
 mod proj;
 mod tangent;
 mod uniq;

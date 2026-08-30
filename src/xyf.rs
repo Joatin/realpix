@@ -58,6 +58,15 @@ impl Direction {
     ];
 
     /// Index of this direction into a neighbour array.
+    ///
+    /// ```
+    /// use realpix::Direction;
+    ///
+    /// let layer = realpix::nested::get(6);
+    /// let cell = layer.hash(1.0, 0.5);
+    /// let all = layer.neighbours(cell);
+    /// assert_eq!(all[Direction::N.index()], layer.neighbour(cell, Direction::N));
+    /// ```
     #[inline(always)]
     pub const fn index(self) -> usize {
         self as usize
@@ -234,48 +243,78 @@ impl Base {
     /// where only three base cells meet.
     #[inline]
     pub(crate) fn neighbours_xyf(&self, xyf: Xyf) -> [Option<Xyf>; 8] {
-        let nside = self.nside as i32;
-        let mut out = [None; 8];
-        for i in 0..8 {
-            let mut x = xyf.x as i32 + XOFFSET[i];
-            let mut y = xyf.y as i32 + YOFFSET[i];
-            // Bucket 4 is "same face"; each edge crossing shifts the bucket.
-            let mut bucket = 4i32;
-            if x < 0 {
-                x += nside;
-                bucket -= 1;
-            } else if x >= nside {
-                x -= nside;
-                bucket += 1;
-            }
-            if y < 0 {
-                y += nside;
-                bucket -= 3;
-            } else if y >= nside {
-                y -= nside;
-                bucket += 3;
-            }
-
-            let face = FACEARRAY[bucket as usize][xyf.face as usize];
-            if face >= 0 {
-                let bits = SWAPARRAY[bucket as usize][xyf.face as usize];
-                if bits & 1 != 0 {
-                    x = nside - x - 1;
-                }
-                if bits & 2 != 0 {
-                    y = nside - y - 1;
-                }
-                if bits & 4 != 0 {
-                    core::mem::swap(&mut x, &mut y);
-                }
-                out[i] = Some(Xyf {
-                    x: x as u32,
-                    y: y as u32,
-                    face: face as u8,
-                });
-            }
+        if self.is_interior(xyf) {
+            return core::array::from_fn(|i| Some(Self::interior_neighbour(xyf, i)));
         }
-        out
+        core::array::from_fn(|i| self.neighbour_xyf(xyf, i))
+    }
+
+    /// Whether none of `xyf`'s neighbours cross a base-cell edge, so the lookup tables are
+    /// not needed. True for every cell but the border of a base cell, which is why it is
+    /// worth one comparison to find out.
+    #[inline(always)]
+    pub(crate) const fn is_interior(&self, xyf: Xyf) -> bool {
+        xyf.x > 0 && xyf.x < self.nside_minus_1 && xyf.y > 0 && xyf.y < self.nside_minus_1
+    }
+
+    /// The neighbour of an interior cell: same face, offset by one, always present.
+    #[inline(always)]
+    fn interior_neighbour(xyf: Xyf, direction: usize) -> Xyf {
+        Xyf {
+            x: (xyf.x as i32 + XOFFSET[direction]) as u32,
+            y: (xyf.y as i32 + YOFFSET[direction]) as u32,
+            face: xyf.face,
+        }
+    }
+
+    /// The neighbour of `xyf` in one [`Direction`], by its index.
+    ///
+    /// `None` for the missing neighbour of a cell on a base-cell corner where only three
+    /// base cells meet.
+    #[inline]
+    pub(crate) fn neighbour_xyf(&self, xyf: Xyf, direction: usize) -> Option<Xyf> {
+        if self.is_interior(xyf) {
+            return Some(Self::interior_neighbour(xyf, direction));
+        }
+        let nside = self.nside as i32;
+        let mut x = xyf.x as i32 + XOFFSET[direction];
+        let mut y = xyf.y as i32 + YOFFSET[direction];
+        // Bucket 4 is "same face"; each edge crossing shifts the bucket.
+        let mut bucket = 4i32;
+        if x < 0 {
+            x += nside;
+            bucket -= 1;
+        } else if x >= nside {
+            x -= nside;
+            bucket += 1;
+        }
+        if y < 0 {
+            y += nside;
+            bucket -= 3;
+        } else if y >= nside {
+            y -= nside;
+            bucket += 3;
+        }
+
+        let face = FACEARRAY[bucket as usize][xyf.face as usize];
+        if face < 0 {
+            return None;
+        }
+        let bits = SWAPARRAY[bucket as usize][xyf.face as usize];
+        if bits & 1 != 0 {
+            x = nside - x - 1;
+        }
+        if bits & 2 != 0 {
+            y = nside - y - 1;
+        }
+        if bits & 4 != 0 {
+            core::mem::swap(&mut x, &mut y);
+        }
+        Some(Xyf {
+            x: x as u32,
+            y: y as u32,
+            face: face as u8,
+        })
     }
 }
 

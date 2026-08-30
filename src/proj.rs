@@ -81,24 +81,6 @@ impl Base {
         }
     }
 
-    /// The `z = sin(lat)` of a point on the `(face, x, y)` grid, without any trigonometry.
-    ///
-    /// This is the cheap half of [`xyf2loc`](Self::xyf2loc): the cone search uses it to
-    /// reject cells by latitude alone before paying for a longitude.
-    #[inline]
-    pub(crate) fn xyf2z(&self, face: u8, x: f64, y: f64) -> f64 {
-        let nside = self.nside_f64;
-        let jr = (JRLL[face as usize] as f64) * nside - x - y;
-        if jr < nside {
-            1.0 - jr * jr * self.fact2
-        } else if jr > 3.0 * nside {
-            let nr = 4.0 * nside - jr;
-            nr * nr * self.fact2 - 1.0
-        } else {
-            (2.0 * nside - jr) * self.fact1
-        }
-    }
-
     /// Deprojects a *continuous* position on the `(face, x, y)` grid back to the sphere.
     ///
     /// `x` and `y` range over `[0, nside]`; a cell centre is `(ix + 0.5, iy + 0.5)` and its
