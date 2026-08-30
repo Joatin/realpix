@@ -31,6 +31,11 @@ realpix = "0.2"
 > **Note** — 0.2 is not on crates.io yet; the registry still serves `0.1.3`, whose API this
 > README no longer describes. Until the release, depend on the repository:
 > `realpix = { git = "https://github.com/Joatin/realpix" }`.
+>
+> **If you are on 0.1.x, read [CHANGELOG.md](CHANGELOG.md) first.** Its projection did not
+> implement HEALPix: measured against this release, which is pinned to `healpy`, the two
+> agree on 2.6% of sky positions. Stored 0.1.x indices have to be recomputed from the
+> original coordinates — there is no mapping from the old numbering to the correct one.
 
 ---
 
@@ -40,7 +45,7 @@ realpix = "0.2"
 * [RING vs NESTED](#ring-vs-nested) · [Cone search](#cone-search) · [Coverage maps](#coverage-maps)
 * [Expanding a search outwards](#expanding-a-search-outwards) · [Hashing in bulk](#hashing-in-bulk)
 * [Coordinate conventions](#coordinate-conventions) · [Performance](#performance) · [Cargo features](#cargo-features)
-* [Correctness](#correctness) · [Status](#status) · [License](#license)
+* [Correctness](#correctness) · [Status](#status) · [Changelog](CHANGELOG.md) · [License](#license)
 
 ---
 
@@ -371,7 +376,8 @@ uv run --python 3.12 --with healpy --with numpy python tools/gen_golden.py --che
 
 The version on crates.io is still `0.1.3`. Everything above describes 0.2, which is
 committed but unreleased — it replaced the pre-0.2 API wholesale, so upgrading is a port
-rather than a bump.
+rather than a bump. [CHANGELOG.md](CHANGELOG.md) has the migration table, and every entry
+in it is compiled by `tests/migration.rs` so the advice cannot rot.
 
 ---
 
