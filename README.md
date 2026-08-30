@@ -10,6 +10,8 @@
 
 <p align="center">
   <a href="https://github.com/Joatin/realpix/actions/workflows/ci.yaml"><img src="https://github.com/Joatin/realpix/actions/workflows/ci.yaml/badge.svg" alt="Cargo Build &amp; Test"></a>
+  <a href="https://crates.io/crates/realpix"><img src="https://img.shields.io/crates/v/realpix.svg" alt="crates.io"></a>
+  <a href="https://docs.rs/realpix"><img src="https://img.shields.io/docsrs/realpix" alt="docs.rs"></a>
 </p>
 
 **`REALPix`** is a pure-Rust implementation of **HEALPix** — the Hierarchical Equal Area
@@ -25,6 +27,10 @@ is built for the inner loop of astrometry and plate solving: allocation-free hot
 [dependencies]
 realpix = "0.2"
 ```
+
+> **Note** — 0.2 is not on crates.io yet; the registry still serves `0.1.3`, whose API this
+> README no longer describes. Until the release, depend on the repository:
+> `realpix = { git = "https://github.com/Joatin/realpix" }`.
 
 ---
 
@@ -363,7 +369,9 @@ uv run --python 3.12 --with healpy --with numpy python tools/gen_golden.py --che
 * 🚧 Polygon and elliptical-cone queries
 * 🚧 Bilinear interpolation weights
 
-Not yet published to crates.io.
+The version on crates.io is still `0.1.3`. Everything above describes 0.2, which is
+committed but unreleased — it replaced the pre-0.2 API wholesale, so upgrading is a port
+rather than a bump.
 
 ---
 
