@@ -28,14 +28,11 @@ is built for the inner loop of astrometry and plate solving: allocation-free hot
 realpix = "0.2"
 ```
 
-> **Note** — 0.2 is not on crates.io yet; the registry still serves `0.1.3`, whose API this
-> README no longer describes. Until the release, depend on the repository:
-> `realpix = { git = "https://github.com/Joatin/realpix" }`.
->
-> **If you are on 0.1.x, read [CHANGELOG.md](CHANGELOG.md) first.** Its projection did not
-> implement HEALPix: measured against this release, which is pinned to `healpy`, the two
-> agree on 2.6% of sky positions. Stored 0.1.x indices have to be recomputed from the
-> original coordinates — there is no mapping from the old numbering to the correct one.
+> **Upgrading from 0.1.x? Read [CHANGELOG.md](CHANGELOG.md) first.** 0.1's projection did
+> not implement HEALPix: measured against this release, which is pinned to `healpy`, the
+> two agree on 2.6% of sky positions. Stored 0.1.x indices have to be recomputed from the
+> original coordinates — there is no mapping from the old numbering to the correct one. The
+> changelog has the full migration table.
 
 ---
 
@@ -379,10 +376,9 @@ uv run --python 3.12 --with healpy --with numpy python tools/gen_golden.py --che
 * 🚧 Polygon and elliptical-cone queries
 * 🚧 Bilinear interpolation weights
 
-The version on crates.io is still `0.1.3`. Everything above describes 0.2, which is
-committed but unreleased — it replaced the pre-0.2 API wholesale, so upgrading is a port
-rather than a bump. [CHANGELOG.md](CHANGELOG.md) has the migration table, and every entry
-in it is compiled by `tests/migration.rs` so the advice cannot rot.
+0.2.0 is released. It replaced the pre-0.2 API wholesale, so upgrading from 0.1.x is a
+port rather than a bump — [CHANGELOG.md](CHANGELOG.md) has the migration table, and every
+entry in it is compiled by `tests/migration.rs` so the advice cannot rot.
 
 ---
 
