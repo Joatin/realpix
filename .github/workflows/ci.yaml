@@ -2,7 +2,11 @@ name: Cargo Build & Test
 
 on:
   push:
+    # Branches only. A tag push runs this gate through `publish.yaml`, which calls it as a
+    # reusable workflow, so matching tags here would run everything twice.
+    branches: ['**']
   pull_request:
+  workflow_call:
 
 env:
   CARGO_TERM_COLOR: always
@@ -36,6 +40,25 @@ jobs:
       - run: cargo build --no-default-features --features libm,alloc
       - run: cargo build --no-default-features --features latlong
       - run: cargo test --no-default-features --features libm,alloc
+
+  msrv:
+    name: Minimum supported Rust version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read rust-version from Cargo.toml
+        id: msrv
+        run: echo "version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].rust_version')" >> "$GITHUB_OUTPUT"
+      - run: rustup toolchain install ${{ steps.msrv.outputs.version }} --profile minimal
+      - run: rustup default ${{ steps.msrv.outputs.version }}
+      - run: rustup target add thumbv7em-none-eabihf
+      # The library only — dev-dependencies are free to need a newer compiler than the
+      # crate itself does.
+      - run: cargo build --all-features
+      - run: cargo build --no-default-features --features libm
+      - run: cargo build --no-default-features --features libm,alloc
+      - run: cargo build --no-default-features --features libm --target thumbv7em-none-eabihf
+      - run: cargo build --no-default-features --features libm,alloc --target thumbv7em-none-eabihf
 
   no_std:
     name: no_std target

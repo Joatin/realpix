@@ -2,6 +2,9 @@
 name = "realpix"
 version = "0.2.0"
 edition = "2024"
+# Determined by bisection, not by guesswork: 1.87 rejects the let-chain in src/merge.rs.
+# The `msrv` CI job pins this so it cannot drift.
+rust-version = "1.88"
 description = "A HEALPix implementation in pure rust"
 keywords = ["HEALPix"]
 license = "Apache-2.0 OR MIT"
