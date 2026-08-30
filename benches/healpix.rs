@@ -724,6 +724,27 @@ fn moc_setops(c: &mut Criterion) {
             |b, _| b.iter(|| black_box(!&a)),
         );
     }
+
+    // Accumulating a survey. Both spellings are here because the point of `union_all` is
+    // that folding `|` over the same sequence is quadratic.
+    for count in [50usize, 400] {
+        let frames: Vec<Moc> = (0..count)
+            .map(|i| Moc::from_cone(9, points[i % points.len()].2, 0.02))
+            .collect();
+        g.bench_with_input(BenchmarkId::new("moc::union_all", count), &count, |b, _| {
+            b.iter(|| black_box(Moc::union_all(frames.iter()).deep_ranges().len()))
+        });
+        g.bench_with_input(
+            BenchmarkId::new("moc::union_all (as a fold)", count),
+            &count,
+            |b, _| {
+                b.iter(|| {
+                    let m = frames.iter().fold(Moc::new(), |acc, f| &acc | f);
+                    black_box(m.deep_ranges().len())
+                })
+            },
+        );
+    }
     g.finish();
 }
 

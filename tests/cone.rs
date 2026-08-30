@@ -18,7 +18,7 @@ fn every_point_inside_the_cone_is_covered() {
             let cells = layer.cone_coverage_cells(center, radius);
 
             for _ in 0..500 {
-                let p = random_point_in_cone(&mut rng, center, radius);
+                let p = rng.next_in_cone(center, radius);
                 assert!(ang_dist(p, center) <= radius + 1e-12);
 
                 let cell = layer.hash_vec(p);
@@ -207,19 +207,6 @@ fn cone_over_a_pole_is_covered() {
     }
 }
 
-fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
-    [
-        a[1] * b[2] - a[2] * b[1],
-        a[2] * b[0] - a[0] * b[2],
-        a[0] * b[1] - a[1] * b[0],
-    ]
-}
-
-fn norm(v: [f64; 3]) -> [f64; 3] {
-    let n = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
-    [v[0] / n, v[1] / n, v[2] / n]
-}
-
 // ---------------------------------------------------------------------------------------
 // RING scheme
 // ---------------------------------------------------------------------------------------
@@ -239,7 +226,7 @@ fn ring_covers_every_point_inside_the_cone() {
             let cells = layer.cone_coverage_cells(center, radius);
 
             for _ in 0..500 {
-                let p = random_point_in_cone(&mut rng, center, radius);
+                let p = rng.next_in_cone(center, radius);
                 assert!(
                     cells.binary_search(&layer.hash_vec(p)).is_ok(),
                     "depth {depth}: point inside the cone landed in an uncovered cell"
@@ -432,31 +419,11 @@ fn ring_cone_wraps_in_longitude() {
         let center = lonlat_to_vec(0.0, lat);
         let cells = layer.cone_coverage_cells(center, 0.15);
         for _ in 0..3000 {
-            let p = random_point_in_cone(&mut rng, center, 0.15);
+            let p = rng.next_in_cone(center, 0.15);
             assert!(
                 cells.binary_search(&layer.hash_vec(p)).is_ok(),
                 "cone across longitude zero at lat {lat} missed a point"
             );
         }
     }
-}
-
-/// A direction uniformly distributed inside the cone of `radius` around `center`.
-fn random_point_in_cone(rng: &mut Rng, center: [f64; 3], radius: f64) -> [f64; 3] {
-    let cos_r = radius.cos();
-    let cos_t = 1.0 - rng.next_f64() * (1.0 - cos_r);
-    let sin_t = (1.0 - cos_t * cos_t).sqrt();
-    let az = rng.next_f64() * std::f64::consts::TAU;
-    let a = if center[2].abs() < 0.9 {
-        [0.0, 0.0, 1.0]
-    } else {
-        [1.0, 0.0, 0.0]
-    };
-    let u = norm(cross(a, center));
-    let v = cross(center, u);
-    norm([
-        center[0] * cos_t + (u[0] * az.cos() + v[0] * az.sin()) * sin_t,
-        center[1] * cos_t + (u[1] * az.cos() + v[1] * az.sin()) * sin_t,
-        center[2] * cos_t + (u[2] * az.cos() + v[2] * az.sin()) * sin_t,
-    ])
 }

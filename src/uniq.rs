@@ -17,6 +17,7 @@ use crate::depth::MAX_DEPTH;
 /// assert_eq!(realpix::to_uniq(1, 12), 28);
 /// assert_eq!(realpix::from_uniq(realpix::to_uniq(1, 12)), (1, 12));
 /// ```
+#[must_use]
 #[inline]
 pub const fn to_uniq(depth: u8, cell: u64) -> u64 {
     assert!(depth <= MAX_DEPTH, "depth must be <= MAX_DEPTH");
@@ -37,6 +38,7 @@ pub const fn to_uniq(depth: u8, cell: u64) -> u64 {
 /// assert_eq!(realpix::from_uniq(4), (0, 0));
 /// assert_eq!(realpix::from_uniq(16), (1, 0));
 /// ```
+#[must_use]
 #[inline]
 pub const fn from_uniq(uniq: u64) -> (u8, u64) {
     assert!(uniq >= 4, "not a valid uniq value");
@@ -72,6 +74,6 @@ mod tests {
     #[test]
     #[should_panic(expected = "cell out of range")]
     fn rejects_an_out_of_range_cell() {
-        to_uniq(1, 48);
+        let _ = to_uniq(1, 48);
     }
 }

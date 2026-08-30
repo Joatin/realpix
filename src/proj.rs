@@ -2,6 +2,13 @@
 //!
 //! Both directions follow the reference C++ implementation (`healpix_base`) exactly, so
 //! indices are bit-identical to it and to `healpy`.
+//!
+//! That is why the `a * b + c` expressions below are written out rather than fused into
+//! `a.mul_add(b, c)`, which `clippy::suboptimal_flops` will suggest: the fused form keeps
+//! the intermediate product at full precision and so does not always round to the same
+//! `f64`. It is the more accurate operation, and that is precisely the problem — the
+//! golden vectors pin this code to the reference's arithmetic, not to the best available
+//! arithmetic. The same goes for reassociating any of these expressions.
 
 use crate::base::Base;
 use crate::math::{FRAC_PI_2, FRAC_PI_4, INV_HALF_PI, TRANSITION_Z, abs, fmodulo, sqrt};

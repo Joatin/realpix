@@ -286,7 +286,7 @@ fn a_cone_coverage_holds_the_cone() {
 
             // Every point of the cone is in the coverage.
             for _ in 0..300 {
-                let p = random_point_in_cone(&mut rng, center, radius);
+                let p = rng.next_in_cone(center, radius);
                 assert!(
                     moc.contains_vec(p),
                     "a point inside the cone is not covered"
@@ -382,34 +382,35 @@ fn rejects_a_range_beyond_its_depth() {
     Moc::from_ranges(1, std::iter::once(40..49));
 }
 
-fn random_point_in_cone(rng: &mut Rng, center: [f64; 3], radius: f64) -> [f64; 3] {
-    let cos_r = radius.cos();
-    let cos_t = 1.0 - rng.next_f64() * (1.0 - cos_r);
-    let sin_t = (1.0 - cos_t * cos_t).sqrt();
-    let az = rng.next_f64() * std::f64::consts::TAU;
-    let a = if center[2].abs() < 0.9 {
-        [0.0, 0.0, 1.0]
-    } else {
-        [1.0, 0.0, 0.0]
-    };
-    let u = norm(cross(a, center));
-    let v = cross(center, u);
-    norm([
-        center[0] * cos_t + (u[0] * az.cos() + v[0] * az.sin()) * sin_t,
-        center[1] * cos_t + (u[1] * az.cos() + v[1] * az.sin()) * sin_t,
-        center[2] * cos_t + (u[2] * az.cos() + v[2] * az.sin()) * sin_t,
-    ])
-}
+/// `union_all` and `collect` must agree with folding `union`, which is the definition they
+/// exist to be a faster version of.
+#[test]
+fn union_all_agrees_with_folding_union() {
+    let mut rng = Rng::new(0xACC);
+    for count in [0usize, 1, 2, 7, 40] {
+        let mocs: Vec<Moc> = (0..count)
+            .map(|_| Moc::from_cone(7, rng.next_vec(), rng.next_f64() * 0.2 + 0.01))
+            .collect();
+        let folded = mocs.iter().fold(Moc::new(), |acc, m| &acc | m);
 
-fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
-    [
-        a[1] * b[2] - a[2] * b[1],
-        a[2] * b[0] - a[0] * b[2],
-        a[0] * b[1] - a[1] * b[0],
-    ]
-}
+        assert_eq!(Moc::union_all(mocs.iter()), folded, "{count} coverages");
+        assert_eq!(
+            mocs.iter().collect::<Moc>(),
+            folded,
+            "{count}, by reference"
+        );
+        assert_eq!(
+            mocs.clone().into_iter().collect::<Moc>(),
+            folded,
+            "{count}, owned"
+        );
+    }
 
-fn norm(v: [f64; 3]) -> [f64; 3] {
-    let n = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
-    [v[0] / n, v[1] / n, v[2] / n]
+    // Overlapping coverages must coalesce, not accumulate duplicates.
+    let one = Moc::from_cells(1, [12]);
+    let same: Vec<Moc> = (0..5).map(|_| one.clone()).collect();
+    assert_eq!(Moc::union_all(same.iter()), one);
+    // And the four children of a base cell still become that base cell.
+    let quarters: Vec<Moc> = (12..16).map(|c| Moc::from_cells(1, [c])).collect();
+    assert_eq!(quarters.iter().collect::<Moc>(), Moc::from_cells(0, [3]));
 }

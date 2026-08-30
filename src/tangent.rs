@@ -14,6 +14,7 @@ use crate::math::{cos, sin, sin_cos};
 /// let (x, y) = gnomonic_project(0.0, 0.0, 0.01, 0.0).unwrap();
 /// assert!((x - 0.01f64.tan()).abs() < 1e-12 && y.abs() < 1e-15);
 /// ```
+#[must_use]
 #[inline]
 pub fn gnomonic_project(
     center_lon: f64,
@@ -46,6 +47,7 @@ pub fn gnomonic_project(
 /// let b = realpix::lonlat_to_vec(1e-9, 0.0);
 /// assert!((realpix::angular_distance(a, b) - 1e-9).abs() < 1e-24);
 /// ```
+#[must_use]
 #[inline]
 pub fn angular_distance(a: Vec3, b: Vec3) -> f64 {
     let c = [
@@ -70,6 +72,7 @@ pub fn angular_distance(a: Vec3, b: Vec3) -> f64 {
 /// let p = realpix::lonlat_to_vec(1.234, std::f64::consts::FRAC_PI_2);
 /// assert!((p[2] - 1.0).abs() < 1e-15);
 /// ```
+#[must_use]
 #[inline]
 pub fn lonlat_to_vec(lon: f64, lat: f64) -> Vec3 {
     let (sin_lon, cos_lon) = sin_cos(lon);
@@ -87,6 +90,7 @@ pub fn lonlat_to_vec(lon: f64, lat: f64) -> Vec3 {
 /// assert!((lon - 1.5 * std::f64::consts::PI).abs() < 1e-15);
 /// assert!(lat.abs() < 1e-15);
 /// ```
+#[must_use]
 #[inline]
 pub fn vec_to_lonlat(v: Vec3) -> (f64, f64) {
     let lon = crate::math::fmodulo(crate::math::safe_atan2(v[1], v[0]), crate::math::TAU);

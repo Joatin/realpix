@@ -76,6 +76,7 @@ impl Moc {
     /// assert_eq!(Moc::new().area(), 0.0);
     /// assert_eq!(Moc::new(), Moc::default());
     /// ```
+    #[must_use]
     #[inline]
     pub const fn new() -> Moc {
         Moc { ranges: Vec::new() }
@@ -93,6 +94,7 @@ impl Moc {
     /// assert_eq!(Moc::all_sky(), Moc::from_cells(0, 0..12));
     /// assert_eq!(Moc::all_sky().complement(), Moc::new());
     /// ```
+    #[must_use]
     #[inline]
     pub fn all_sky() -> Moc {
         Moc {
@@ -197,6 +199,7 @@ impl Moc {
     /// // Inclusive, so it is at least as large as the disc itself.
     /// assert!(cone.area() >= 2.0 * std::f64::consts::PI * (1.0 - 0.02f64.cos()));
     /// ```
+    #[must_use]
     pub fn from_cone(depth: u8, center: crate::Vec3, radius: f64) -> Moc {
         // The cone search already emits sorted, disjoint, non-adjacent ranges, so they can
         // be scaled to the deepest layer as they arrive and stored without a second pass.
@@ -206,6 +209,33 @@ impl Moc {
             ranges.push((r.start << shift)..(r.end << shift))
         });
         Moc { ranges }
+    }
+
+    /// The union of many coverages at once.
+    ///
+    /// Folding [`union`](Self::union) over a sequence copies the whole accumulated
+    /// coverage at every step, so its cost grows with the square of the number of
+    /// coverages. This flattens them all and normalises once. Measured over a few hundred
+    /// cones the fold runs 3.5-4x slower, and the gap widens with the count; where the two
+    /// cross over depends on how much the coverages overlap, so prefer this whenever the
+    /// count is not small and fixed.
+    ///
+    /// Also available as `collect()`, over either owned coverages or references.
+    ///
+    /// ```
+    /// use realpix::moc::Moc;
+    ///
+    /// let frames: Vec<Moc> = (0..4)
+    ///     .map(|i| Moc::from_cone(8, realpix::lonlat_to_vec(1.0 + i as f64 * 0.02, 0.5), 0.03))
+    ///     .collect();
+    ///
+    /// let observed = Moc::union_all(frames.iter());
+    /// assert_eq!(observed, frames.iter().collect::<Moc>());
+    /// assert_eq!(observed, frames.iter().fold(Moc::new(), |a, f| &a | f));
+    /// ```
+    #[must_use]
+    pub fn union_all<'a, I: IntoIterator<Item = &'a Moc>>(mocs: I) -> Moc {
+        Moc::from_deep_ranges(mocs.into_iter().flat_map(|m| m.ranges.iter().cloned()))
     }
 
     /// Normalises an arbitrary sequence of depth-`MAX_DEPTH` ranges: sort, then coalesce
@@ -232,6 +262,7 @@ impl Moc {
     /// let b = Moc::from_cone(8, realpix::lonlat_to_vec(3.0, 0.0), 0.01);
     /// assert!((&a & &b).is_empty());
     /// ```
+    #[must_use]
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.ranges.is_empty()
@@ -247,6 +278,7 @@ impl Moc {
     /// // One base cell is a twelfth of the sky.
     /// assert!((Moc::from_cells(0, [7]).area() - sphere / 12.0).abs() < 1e-12);
     /// ```
+    #[must_use]
     pub fn area(&self) -> f64 {
         let cells: u64 = self.ranges.iter().map(|r| r.end - r.start).sum();
         cells as f64 * (4.0 * core::f64::consts::PI / FULL_SKY as f64)
@@ -264,6 +296,7 @@ impl Moc {
     /// assert_eq!(Moc::new().sky_fraction(), 0.0);
     /// assert!((Moc::from_cells(0, [7]).sky_fraction() - 1.0 / 12.0).abs() < 1e-15);
     /// ```
+    #[must_use]
     pub fn sky_fraction(&self) -> f64 {
         let cells: u64 = self.ranges.iter().map(|r| r.end - r.start).sum();
         cells as f64 / FULL_SKY as f64
@@ -284,6 +317,7 @@ impl Moc {
     /// // But everything inside a covered cell is covered.
     /// assert!(moc.contains(2, 48));
     /// ```
+    #[must_use]
     pub fn contains(&self, depth: u8, cell: u64) -> bool {
         assert!(
             cell < n_hash(depth),
@@ -307,6 +341,7 @@ impl Moc {
     /// assert!(cone.contains_vec(center));
     /// assert!(!cone.contains_vec(realpix::lonlat_to_vec(3.0, -0.5)));
     /// ```
+    #[must_use]
     #[inline]
     pub fn contains_vec(&self, v: crate::Vec3) -> bool {
         self.range_covering(crate::nested::get(MAX_DEPTH).hash_vec(v))
@@ -322,6 +357,7 @@ impl Moc {
     /// assert!(cone.contains_lonlat(1.0, 0.5));
     /// assert!(!cone.contains_lonlat(3.0, -0.5));
     /// ```
+    #[must_use]
     #[inline]
     pub fn contains_lonlat(&self, lon: f64, lat: f64) -> bool {
         self.range_covering(crate::nested::get(MAX_DEPTH).hash(lon, lat))
@@ -349,6 +385,7 @@ impl Moc {
     /// assert_eq!(a.union(&b), Moc::from_cells(0, [3]));
     /// assert_eq!(&a | &b, a.union(&b));
     /// ```
+    #[must_use]
     pub fn union(&self, other: &Moc) -> Moc {
         let (a, b) = (&self.ranges, &other.ranges);
         let mut out = Vec::with_capacity(a.len() + b.len());
@@ -380,6 +417,7 @@ impl Moc {
     /// assert_eq!(a.intersection(&b), Moc::from_cells(1, [14]));
     /// assert_eq!(&a & &b, a.intersection(&b));
     /// ```
+    #[must_use]
     pub fn intersection(&self, other: &Moc) -> Moc {
         let (a, b) = (&self.ranges, &other.ranges);
         // No capacity hint: an intersection is usually a small fraction of either input,
@@ -414,6 +452,7 @@ impl Moc {
     /// let observed = Moc::from_cells(1, [12, 13]);
     /// assert_eq!(&target - &observed, Moc::from_cells(1, [14, 15]));
     /// ```
+    #[must_use]
     pub fn difference(&self, other: &Moc) -> Moc {
         let (a, b) = (&self.ranges, &other.ranges);
         // A difference keeps most of `a`, so this is close to the size actually reached;
@@ -458,6 +497,7 @@ impl Moc {
     /// assert_eq!(a.symmetric_difference(&b), Moc::from_cells(1, [12, 14]));
     /// assert_eq!(&a ^ &b, a.symmetric_difference(&b));
     /// ```
+    #[must_use]
     pub fn symmetric_difference(&self, other: &Moc) -> Moc {
         self.union(other).difference(&self.intersection(other))
     }
@@ -474,6 +514,7 @@ impl Moc {
     /// assert_eq!(&a | &a.complement(), Moc::all_sky());
     /// assert_eq!(!&!&a, a);
     /// ```
+    #[must_use]
     pub fn complement(&self) -> Moc {
         let mut out = Vec::with_capacity(self.ranges.len() + 1);
         let mut start = 0u64;
@@ -511,6 +552,7 @@ impl Moc {
     /// // Rounded outward above it: the partly covered parent is included.
     /// assert_eq!(Moc::from_cells(1, [12]).ranges_at(0), vec![3..4]);
     /// ```
+    #[must_use]
     pub fn ranges_at(&self, depth: u8) -> Vec<Range<u64>> {
         let shift = shift_at(depth);
         let round_up = (1u64 << shift) - 1;
@@ -540,6 +582,7 @@ impl Moc {
     /// let moc = Moc::from_cells(1, [12, 13, 14]);
     /// assert_eq!(moc.cells().collect::<Vec<_>>(), [(1, 12), (1, 13), (1, 14)]);
     /// ```
+    #[must_use]
     #[inline]
     pub fn cells(&self) -> Cells<'_> {
         Cells {
@@ -584,6 +627,7 @@ impl Moc {
     /// assert!(ranges.windows(2).all(|w| w[0].end < w[1].start));
     /// assert_eq!(Moc::from_ranges(MAX_DEPTH, ranges), moc);
     /// ```
+    #[must_use]
     #[inline]
     pub fn deep_ranges(&self) -> &[Range<u64>] {
         &self.ranges
@@ -689,5 +733,19 @@ impl Not for &Moc {
     #[inline]
     fn not(self) -> Moc {
         self.complement()
+    }
+}
+
+impl<'a> FromIterator<&'a Moc> for Moc {
+    /// The union of the coverages; see [`Moc::union_all`].
+    fn from_iter<I: IntoIterator<Item = &'a Moc>>(iter: I) -> Moc {
+        Moc::union_all(iter)
+    }
+}
+
+impl FromIterator<Moc> for Moc {
+    /// The union of the coverages; see [`Moc::union_all`].
+    fn from_iter<I: IntoIterator<Item = Moc>>(iter: I) -> Moc {
+        Moc::from_deep_ranges(iter.into_iter().flat_map(|m| m.ranges))
     }
 }

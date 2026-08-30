@@ -69,6 +69,21 @@ pub fn lonlat_to_vec(lon: f64, lat: f64) -> [f64; 3] {
     [lat.cos() * lon.cos(), lat.cos() * lon.sin(), lat.sin()]
 }
 
+/// Cross product of two 3-vectors.
+pub fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
+    [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    ]
+}
+
+/// Scales a vector to unit length.
+pub fn norm(v: [f64; 3]) -> [f64; 3] {
+    let n = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt();
+    [v[0] / n, v[1] / n, v[2] / n]
+}
+
 /// A tiny deterministic PRNG (splitmix64), so tests never depend on a rand version.
 pub struct Rng(pub u64);
 
@@ -100,5 +115,26 @@ impl Rng {
     pub fn next_vec(&mut self) -> [f64; 3] {
         let (lon, lat) = self.next_lonlat();
         lonlat_to_vec(lon, lat)
+    }
+
+    /// A direction uniformly distributed inside the cone of `radius` around `center`.
+    pub fn next_in_cone(&mut self, center: [f64; 3], radius: f64) -> [f64; 3] {
+        let cos_r = radius.cos();
+        let cos_t = 1.0 - self.next_f64() * (1.0 - cos_r);
+        let sin_t = (1.0 - cos_t * cos_t).sqrt();
+        let az = self.next_f64() * std::f64::consts::TAU;
+        // Any axis not parallel to the centre will do to build the basis.
+        let a = if center[2].abs() < 0.9 {
+            [0.0, 0.0, 1.0]
+        } else {
+            [1.0, 0.0, 0.0]
+        };
+        let u = norm(cross(a, center));
+        let v = cross(center, u);
+        norm([
+            center[0] * cos_t + (u[0] * az.cos() + v[0] * az.sin()) * sin_t,
+            center[1] * cos_t + (u[1] * az.cos() + v[1] * az.sin()) * sin_t,
+            center[2] * cos_t + (u[2] * az.cos() + v[2] * az.sin()) * sin_t,
+        ])
     }
 }

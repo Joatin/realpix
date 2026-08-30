@@ -230,6 +230,7 @@ impl Layer {
     /// // Sorted, disjoint and non-adjacent.
     /// assert!(ranges.windows(2).all(|w| w[0].end < w[1].start));
     /// ```
+    #[must_use]
     #[cfg(feature = "alloc")]
     pub fn cone_coverage_ranges(&self, center: Vec3, radius: f64) -> alloc::vec::Vec<Range<u64>> {
         let mut out = alloc::vec::Vec::new();
@@ -250,6 +251,7 @@ impl Layer {
     /// // The cone's own cell is always covered.
     /// assert!(cells.binary_search(&layer.hash_vec(center)).is_ok());
     /// ```
+    #[must_use]
     #[cfg(feature = "alloc")]
     pub fn cone_coverage_cells(&self, center: Vec3, radius: f64) -> alloc::vec::Vec<u64> {
         let mut out = alloc::vec::Vec::new();

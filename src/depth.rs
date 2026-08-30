@@ -17,6 +17,7 @@ pub const MAX_DEPTH: u8 = 29;
 /// assert_eq!(realpix::nside(0), 1);
 /// assert_eq!(realpix::nside(10), 1024);
 /// ```
+#[must_use]
 #[inline(always)]
 pub const fn nside(depth: u8) -> u32 {
     assert!(depth <= MAX_DEPTH, "depth must be <= MAX_DEPTH");
@@ -32,6 +33,7 @@ pub const fn nside(depth: u8) -> u32 {
 /// assert_eq!(realpix::n_hash(0), 12);
 /// assert_eq!(realpix::n_hash(10), 12 * 1024 * 1024);
 /// ```
+#[must_use]
 #[inline(always)]
 pub const fn n_hash(depth: u8) -> u64 {
     assert!(depth <= MAX_DEPTH, "depth must be <= MAX_DEPTH");

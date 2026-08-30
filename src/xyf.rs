@@ -67,6 +67,7 @@ impl Direction {
     /// let all = layer.neighbours(cell);
     /// assert_eq!(all[Direction::N.index()], layer.neighbour(cell, Direction::N));
     /// ```
+    #[must_use]
     #[inline(always)]
     pub const fn index(self) -> usize {
         self as usize

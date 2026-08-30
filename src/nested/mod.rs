@@ -38,6 +38,7 @@ pub struct Layer {
 /// const LAYER: realpix::nested::Layer = realpix::nested::get(10);
 /// assert_eq!(LAYER.nside(), 1024);
 /// ```
+#[must_use]
 #[inline(always)]
 pub const fn get(depth: u8) -> Layer {
     Layer {
@@ -71,6 +72,7 @@ impl Layer {
     /// ```
     /// assert_eq!(realpix::nested::get(12).depth(), 12);
     /// ```
+    #[must_use]
     #[inline(always)]
     pub const fn depth(&self) -> u8 {
         self.base.depth
@@ -81,6 +83,7 @@ impl Layer {
     /// ```
     /// assert_eq!(realpix::nested::get(12).nside(), 4096);
     /// ```
+    #[must_use]
     #[inline(always)]
     pub const fn nside(&self) -> u32 {
         self.base.nside
@@ -94,6 +97,7 @@ impl Layer {
     /// ```
     /// assert_eq!(realpix::nested::get(1).n_hash(), 48);
     /// ```
+    #[must_use]
     #[inline(always)]
     pub const fn n_hash(&self) -> u64 {
         self.base.n_hash
@@ -108,6 +112,7 @@ impl Layer {
     /// let sphere = layer.cell_area() * layer.n_hash() as f64;
     /// assert!((sphere - 4.0 * std::f64::consts::PI).abs() < 1e-12);
     /// ```
+    #[must_use]
     #[inline]
     pub fn cell_area(&self) -> f64 {
         (4.0 * crate::math::PI) / self.base.n_hash as f64
@@ -122,6 +127,7 @@ impl Layer {
     /// assert!(layer.contains(47));
     /// assert!(!layer.contains(48));
     /// ```
+    #[must_use]
     #[inline(always)]
     pub const fn contains(&self, cell: u64) -> bool {
         self.base.contains(cell)
@@ -147,6 +153,7 @@ impl Layer {
     /// assert_eq!(layer.hash(0.0, 0.0), 4); // on the equator, at the corner of base cell 4
     /// assert_eq!(layer.hash(0.0, std::f64::consts::FRAC_PI_2), 0); // north pole
     /// ```
+    #[must_use]
     #[inline]
     pub fn hash(&self, lon: f64, lat: f64) -> u64 {
         self.base
@@ -166,6 +173,7 @@ impl Layer {
     /// // Colatitude 0 is the north pole; the same point as latitude +π/2.
     /// assert_eq!(layer.hash_theta_phi(0.0, 1.0), layer.hash(1.0, FRAC_PI_2));
     /// ```
+    #[must_use]
     #[inline]
     pub fn hash_theta_phi(&self, theta: f64, phi: f64) -> u64 {
         self.base
@@ -184,6 +192,7 @@ impl Layer {
     /// assert_eq!(layer.hash_vec([2.0, 0.0, 0.0]), layer.hash_vec([1.0, 0.0, 0.0]));
     /// assert_eq!(layer.hash_vec(realpix::lonlat_to_vec(1.0, 0.5)), layer.hash(1.0, 0.5));
     /// ```
+    #[must_use]
     #[inline]
     pub fn hash_vec(&self, v: Vec3) -> u64 {
         self.base.xyf2nested(self.base.loc2xyf(Loc::from_vec(&v)))
@@ -279,6 +288,7 @@ impl Layer {
     /// // The centre of a cell is inside that cell.
     /// assert_eq!(layer.hash(lon, lat), cell);
     /// ```
+    #[must_use]
     #[inline]
     pub fn center(&self, cell: u64) -> (f64, f64) {
         self.center_loc(cell).to_lonlat()
@@ -300,6 +310,7 @@ impl Layer {
     /// let v = layer.center_vec(layer.hash(1.0, 0.5));
     /// assert!((v[0] * v[0] + v[1] * v[1] + v[2] * v[2] - 1.0).abs() < 1e-15);
     /// ```
+    #[must_use]
     #[inline]
     pub fn center_vec(&self, cell: u64) -> Vec3 {
         self.center_loc(cell).to_vec()
@@ -336,6 +347,12 @@ impl Layer {
 
     /// The four corners of `cell` as unit vectors, in the order north, west, south, east.
     ///
+    /// Consecutive corners bound one edge of the cell, and each edge is shared with one
+    /// neighbour: north-west for `[0]..[1]`, south-west for `[1]..[2]`, south-east for
+    /// `[2]..[3]`, and north-east for `[3]..[0]`. That correspondence is what lets you
+    /// stroke a cell boundary once rather than twice, or find the cells along the border
+    /// of a region.
+    ///
     /// # Panics
     /// Panics if `cell` is out of range for this depth.
     /// ```
@@ -347,6 +364,7 @@ impl Layer {
     /// assert!(south[2] < layer.center_vec(cell)[2]);
     /// let _ = (west, east);
     /// ```
+    #[must_use]
     #[inline]
     pub fn vertices(&self, cell: u64) -> [Vec3; 4] {
         self.assert_cell(cell);
@@ -370,6 +388,7 @@ impl Layer {
     /// assert_eq!(corners.len(), 4);
     /// assert!(corners.iter().all(|(lon, _)| (0.0..std::f64::consts::TAU).contains(lon)));
     /// ```
+    #[must_use]
     #[inline]
     pub fn vertices_lonlat(&self, cell: u64) -> [(f64, f64); 4] {
         self.assert_cell(cell);
@@ -403,6 +422,7 @@ impl Layer {
     ///     assert!(layer.neighbours(n).contains(&Some(cell)));
     /// }
     /// ```
+    #[must_use]
     #[inline]
     pub fn neighbours(&self, cell: u64) -> [Option<u64>; 8] {
         self.assert_cell(cell);
@@ -557,6 +577,7 @@ impl Layer {
     /// let inside = layer.children_range(cell, 8);
     /// assert!(layer.external_edge_cells(cell, 8).iter().all(|c| !inside.contains(c)));
     /// ```
+    #[must_use]
     #[cfg(feature = "alloc")]
     pub fn external_edge_cells(&self, cell: u64, edge_depth: u8) -> alloc::vec::Vec<u64> {
         let mut out = alloc::vec::Vec::new();
@@ -579,6 +600,7 @@ impl Layer {
     /// assert_eq!(layer.parent(cell, 0), realpix::nested::get(0).hash(1.0, 0.5));
     /// assert_eq!(layer.parent(cell, 10), cell);
     /// ```
+    #[must_use]
     #[inline]
     pub fn parent(&self, cell: u64, parent_depth: u8) -> u64 {
         self.assert_cell(cell);
@@ -601,6 +623,7 @@ impl Layer {
     /// let below = realpix::nested::get(1);
     /// assert!(layer.children(3).iter().all(|c| below.parent(*c, 0) == 3));
     /// ```
+    #[must_use]
     #[inline]
     pub fn children(&self, cell: u64) -> [u64; 4] {
         self.assert_cell(cell);
@@ -624,6 +647,7 @@ impl Layer {
     /// assert_eq!(layer.children_range(3, 2), 48..64);
     /// assert_eq!(layer.children_range(3, 0), 3..4);
     /// ```
+    #[must_use]
     #[inline]
     pub fn children_range(&self, cell: u64, child_depth: u8) -> Range<u64> {
         self.assert_cell(cell);
@@ -650,6 +674,7 @@ impl Layer {
     /// assert_eq!(realpix::ring::get(8).center(ring), layer.center(cell));
     /// assert_eq!(realpix::ring::get(8).to_nested(ring), cell);
     /// ```
+    #[must_use]
     #[inline]
     pub fn to_ring(&self, cell: u64) -> u64 {
         self.assert_cell(cell);
@@ -663,6 +688,7 @@ impl Layer {
     /// assert_eq!(layer.iter(), 0..48);
     /// assert_eq!(layer.iter().count() as u64, layer.n_hash());
     /// ```
+    #[must_use]
     #[inline]
     pub fn iter(&self) -> Range<u64> {
         0..self.base.n_hash

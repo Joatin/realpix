@@ -265,19 +265,19 @@ fn a_base_cell_ring_is_what_it_should_be() {
 #[test]
 #[should_panic(expected = "edge depth must be between")]
 fn rejects_an_edge_depth_above_the_cell() {
-    nested::get(5).external_edge_cells(0, 4);
+    let _ = nested::get(5).external_edge_cells(0, 4);
 }
 
 #[test]
 #[should_panic(expected = "edge depth must be between")]
 fn rejects_an_edge_depth_past_the_deepest_layer() {
-    nested::get(5).external_edge_cells(0, MAX_DEPTH + 1);
+    let _ = nested::get(5).external_edge_cells(0, MAX_DEPTH + 1);
 }
 
 #[test]
 #[should_panic(expected = "cell index out of range")]
 fn rejects_a_cell_out_of_range() {
-    nested::get(1).external_edge_cells(48, 2);
+    let _ = nested::get(1).external_edge_cells(48, 2);
 }
 
 /// `Direction` still round-trips through the single-direction accessor.
@@ -297,6 +297,37 @@ fn the_single_direction_accessor_agrees_with_the_full_set() {
             let ring_all = rings.neighbours(ring_cell);
             for d in Direction::ALL {
                 assert_eq!(rings.neighbour(ring_cell, d), ring_all[d.index()]);
+            }
+        }
+    }
+}
+
+/// `vertices` documents which neighbour each edge is shared with. That correspondence is
+/// what `external_edge` and the logo both walk, so pin it: the neighbour across an edge
+/// must have both of that edge's corners among its own.
+#[test]
+fn each_cell_edge_is_shared_with_the_documented_neighbour() {
+    /// Neighbour across the edge from corner `i` to corner `i + 1`.
+    const ACROSS: [Direction; 4] = [Direction::NW, Direction::SW, Direction::SE, Direction::NE];
+
+    let mut rng = Rng::new(0x0ED6E5);
+    for depth in [0u8, 1, 3, 7, 14, MAX_DEPTH] {
+        let layer = nested::get(depth);
+        for _ in 0..60 {
+            let cell = layer.hash_vec(rng.next_vec());
+            let corners = layer.vertices(cell);
+            for (edge, direction) in ACROSS.iter().enumerate() {
+                let Some(neighbour) = layer.neighbour(cell, *direction) else {
+                    continue; // A base-cell corner where only three base cells meet.
+                };
+                let theirs = layer.vertices(neighbour);
+                for corner in [corners[edge], corners[(edge + 1) % 4]] {
+                    assert!(
+                        theirs.iter().any(|v| ang_dist(*v, corner) < 1e-9),
+                        "depth {depth}: cell {cell} edge {edge} is not shared with its \
+                         {direction:?} neighbour {neighbour}"
+                    );
+                }
             }
         }
     }

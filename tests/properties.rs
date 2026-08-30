@@ -376,7 +376,7 @@ fn invalid_input_is_reported_not_returned() {
 #[should_panic(expected = "out of range")]
 fn out_of_range_cell_panics() {
     let layer = nested::get(4);
-    layer.center(layer.n_hash());
+    let _ = layer.center(layer.n_hash());
 }
 
 #[test]

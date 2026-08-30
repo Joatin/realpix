@@ -21,10 +21,12 @@ fn main() {
         (2.90, -0.40),
     ];
 
-    let observed = frames
+    // Collecting unions them in one pass. Folding `|` over the sequence would copy the
+    // whole accumulated coverage on every frame, which a real survey would feel.
+    let observed: Moc = frames
         .iter()
         .map(|(lon, lat)| Moc::from_cone(DEPTH, realpix::lonlat_to_vec(*lon, *lat), radius))
-        .fold(Moc::new(), |acc, frame| &acc | &frame);
+        .collect();
 
     let frame_area: f64 = frames
         .iter()
